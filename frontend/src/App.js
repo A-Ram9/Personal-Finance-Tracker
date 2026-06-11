@@ -4,6 +4,7 @@ import Transactions from './components/Transactions';
 import ExpenseChart from './components/ExpenseChart';
 import SummaryCards from './components/SummaryCards';
 import BudgetWidget from './components/BudgetWidget';
+import DashboardSkeleton from './components/DashboardSkeleton'; // Import shimmer framework
 import Auth from './components/Auth';
 import { Container, Typography, Grid, Fade, Select, MenuItem, Box, IconButton } from '@mui/material';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -19,14 +20,22 @@ function App({ toggleTheme, mode }) {
   const [chartData, setChartData] = useState([]);
   const [currency, setCurrency] = useState('INR'); 
   const [rates, setRates] = useState({ INR: 1, USD: 0.012, NPR: 1.60, OMR: 0.0046 });
+  const [loading, setLoading] = useState(true); // Micro-state control toggle
 
   useEffect(() => {
+    // API Rates initialization
     axios.get('https://open.er-api.com/v6/latest/INR')
       .then(res => {
         if (res.data && res.data.rates) setRates(res.data.rates);
       })
       .catch(() => console.log("Using cached currency profiles."));
-  }, []);
+
+    // Artificial tiny cooldown delay to allow the beautiful shimmer effect to pulse
+    if (user) {
+      const timer = setTimeout(() => setLoading(false), 950);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
 
   const handleData = (data) => {
     setTransactions(data);
@@ -45,72 +54,74 @@ function App({ toggleTheme, mode }) {
   const logout = () => {
     localStorage.clear();
     setUser(null);
+    setLoading(true); // Reset load trigger state for next authentication cycles
   };
 
   if (!user) return <Auth onAuthSuccess={(name) => setUser(name)} />;
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Centered User Greeting Banner */}
-      <Box 
-        component={motion.div}
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        sx={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          p: 3, mb: 4, borderRadius: '24px', backgroundColor: 'background.paper',
-          backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.05)'
-        }}
-      >
-        <Box sx={{ flex: 1 }} />
-        <Typography variant="h6" sx={{
-          textAlign: 'center', fontWeight: 800, flex: 2,
-          background: mode === 'dark' ? 'linear-gradient(45deg, #FFF 30%, #FFD700 90%)' : 'linear-gradient(45deg, #4169E1 30%, #101F42 90%)',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
-        }}>
-          Welcome {user} ! Let's stay on track!
-        </Typography>
-        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 1, alignItems: 'center' }}>
-          <Select
-            value={currency} onChange={(e) => setCurrency(e.target.value)} size="small"
-            sx={{ borderRadius: '12px', mx: 1, height: '40px', fontWeight: 700 }}
-          >
-            <MenuItem value="INR">INR (₹)</MenuItem>
-            <MenuItem value="USD">USD ($)</MenuItem>
-            <MenuItem value="NPR">NPR (₨)</MenuItem>
-            <MenuItem value="OMR">OMR (ر.ع.)</MenuItem>
-          </Select>
-          <IconButton onClick={toggleTheme} color="inherit">
-            {mode === 'dark' ? <LightModeIcon sx={{ color: '#FFD700' }} /> : <DarkModeIcon sx={{ color: '#4169E1' }} />}
-          </IconButton>
-          <IconButton onClick={logout} color="error"><LogoutIcon /></IconButton>
-        </Box>
-      </Box>
+      <AnimatePresence mode="wait">
+        {loading ? (
+          // Render the pulsing glass skeleton structures first
+          <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <DashboardSkeleton />
+          </motion.div>
+        ) : (
+          // Fades smoothly into the loaded tracking application
+          <motion.div key="dashboard" initial={{ opacity: 0, scale: 0.99 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}>
+            
+            {/* Header Greeting Banner Row */}
+            <Box sx={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                p: 3, mb: 4, borderRadius: '24px', backgroundColor: 'background.paper',
+                backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.05)'
+              }}
+            >
+              <Box sx={{ flex: 1 }} />
+              <Typography variant="h6" sx={{
+                textAlign: 'center', fontWeight: 800, flex: 2,
+                background: mode === 'dark' ? 'linear-gradient(45deg, #FFF 30%, #FFD700 90%)' : 'linear-gradient(45deg, #4169E1 30%, #101F42 90%)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+              }}>
+                Welcome {user} ! Let's stay on track!
+              </Typography>
+              <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 1, alignItems: 'center' }}>
+                <Select
+                  value={currency} onChange={(e) => setCurrency(e.target.value)} size="small"
+                  sx={{ borderRadius: '12px', mx: 1, height: '40px', fontWeight: 700 }}
+                >
+                  <MenuItem value="INR">INR (₹)</MenuItem>
+                  <MenuItem value="USD">USD ($)</MenuItem>
+                  <MenuItem value="NPR">NPR (₨)</MenuItem>
+                  <MenuItem value="OMR">OMR (ر.ع.)</MenuItem>
+                </Select>
+                <IconButton onClick={toggleTheme} color="inherit">
+                  {mode === 'dark' ? <LightModeIcon sx={{ color: '#FFD700' }} /> : <DarkModeIcon sx={{ color: '#4169E1' }} />}
+                </IconButton>
+                <IconButton onClick={logout} color="error"><LogoutIcon /></IconButton>
+              </Box>
+            </Box>
 
-      {/* Target Structural Uniform Layout Row Sequence */}
-      <Fade in={true} timeout={800}>
-        <Grid container spacing={4}>
-          
-          {/* Row 1: Ledger Operations Block juxtaposed next to matching Budget Card */}
-          <Grid item xs={12} md={7}>
-            <Transactions onData={handleData} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
-          </Grid>
-          <Grid item xs={12} md={5}>
-            <BudgetWidget transactions={transactions} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
-          </Grid>
-          
-          {/* Row 2: Equally Spaced Horizontal Summary Cards */}
-          <Grid item xs={12}>
-            <SummaryCards transactions={transactions} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
-          </Grid>
+            {/* Layout Rows Architecture */}
+            <Grid container spacing={4}>
+              <Grid item xs={12} md={7}>
+                <Transactions onData={handleData} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
+              </Grid>
+              <Grid item xs={12} md={5}>
+                <BudgetWidget transactions={transactions} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
+              </Grid>
+              <Grid item xs={12}>
+                <SummaryCards transactions={transactions} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
+              </Grid>
+              <Grid item xs={12} display="flex" justifyContent="center">
+                <ExpenseChart data={chartData} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} mode={mode} />
+              </Grid>
+            </Grid>
 
-          {/* Row 3: Category Allocation Analysis Block */}
-          <Grid item xs={12} display="flex" justifyContent="center">
-            <ExpenseChart data={chartData} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} mode={mode} />
-          </Grid>
-          
-        </Grid>
-      </Fade>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Container>
   );
 }
