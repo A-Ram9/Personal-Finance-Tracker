@@ -6,6 +6,7 @@ import SummaryCards from './components/SummaryCards';
 import BudgetWidget from './components/BudgetWidget';
 import DashboardSkeleton from './components/DashboardSkeleton'; 
 import IntelligencePanel from './components/IntelligencePanel'; // Intelligence engine successfully linked
+import FinGanPanel from './components/FinGanPanel'; // NEW: FinGan AI Layer Imported
 import Auth from './components/Auth';
 import { Container, Typography, Grid, Select, MenuItem, Box, IconButton } from '@mui/material';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -133,6 +134,13 @@ function App({ toggleTheme, mode }) {
               {/* Row 4: Algorithmic Intelligence Trend Advisor Panel */}
               <Grid item xs={12}>
                 <IntelligencePanel transactions={transactions} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
+              </Grid>
+
+              {/* ======================================================= */}
+              {/* Row 5: NEW: FinGan Premium Off-Grid Local AI Bot Core    */}
+              {/* ======================================================= */}
+              <Grid item xs={12}>
+                <FinGanPanel />
               </Grid>
 
             </Grid>
