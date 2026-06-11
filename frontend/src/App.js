@@ -3,11 +3,13 @@ import axios from 'axios';
 import Transactions from './components/Transactions';
 import ExpenseChart from './components/ExpenseChart';
 import SummaryCards from './components/SummaryCards';
+import BudgetWidget from './components/BudgetWidget';
 import Auth from './components/Auth';
-import { Container, Typography, AppBar, Toolbar, Button, Grid, Fade, Select, MenuItem, Box, IconButton } from '@mui/material';
+import { Container, Typography, Grid, Fade, Select, MenuItem, Box, IconButton } from '@mui/material';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import LogoutIcon from '@mui/icons-material/Logout';
+import { motion } from 'framer-motion';
 
 const CURRENCY_SYMBOLS = { INR: '₹', USD: '$', NPR: '₨', OMR: 'ر.ع.' };
 
@@ -15,10 +17,9 @@ function App({ toggleTheme, mode }) {
   const [user, setUser] = useState(localStorage.getItem('username') || null);
   const [transactions, setTransactions] = useState([]);
   const [chartData, setChartData] = useState([]);
-  const [currency, setCurrency] = useState('INR'); // Base Currency is INR
+  const [currency, setCurrency] = useState('INR'); 
   const [rates, setRates] = useState({ INR: 1, USD: 0.012, NPR: 1.60, OMR: 0.0046 });
 
-  // Fetch Live Rates targeting INR base metrics
   useEffect(() => {
     axios.get('https://open.er-api.com/v6/latest/INR')
       .then(res => {
@@ -50,12 +51,17 @@ function App({ toggleTheme, mode }) {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Dynamic Centered Greeting Strip & Theme Selector */}
-      <Box sx={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        p: 3, mb: 4, borderRadius: '24px', backgroundColor: 'background.paper',
-        backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.05)'
-      }}>
+      {/* Centered User Greeting Banner */}
+      <Box 
+        component={motion.div}
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        sx={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          p: 3, mb: 4, borderRadius: '24px', backgroundColor: 'background.paper',
+          backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.05)'
+        }}
+      >
         <Box sx={{ flex: 1 }} />
         <Typography variant="h6" sx={{
           textAlign: 'center', fontWeight: 800, flex: 2,
@@ -81,23 +87,28 @@ function App({ toggleTheme, mode }) {
         </Box>
       </Box>
 
-      {/* Target Custom Order Layout Grid */}
+      {/* Target Structural Uniform Layout Row Sequence */}
       <Fade in={true} timeout={800}>
         <Grid container spacing={4}>
-          {/* Section 1: Top Ledger Input Form */}
-          <Grid item xs={12}>
+          
+          {/* Row 1: Ledger Operations Block juxtaposed next to matching Budget Card */}
+          <Grid item xs={12} md={7}>
             <Transactions onData={handleData} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
           </Grid>
+          <Grid item xs={12} md={5}>
+            <BudgetWidget transactions={transactions} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
+          </Grid>
           
-          {/* Section 2: Equal-Width Summary Metrics Layout Row */}
+          {/* Row 2: Equally Spaced Horizontal Summary Cards */}
           <Grid item xs={12}>
             <SummaryCards transactions={transactions} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} />
           </Grid>
 
-          {/* Section 3: Distribution Breakdown Visualizer Card */}
+          {/* Row 3: Category Allocation Analysis Block */}
           <Grid item xs={12} display="flex" justifyContent="center">
             <ExpenseChart data={chartData} convertAmount={convertAmount} currencySymbol={CURRENCY_SYMBOLS[currency]} mode={mode} />
           </Grid>
+          
         </Grid>
       </Fade>
     </Container>
